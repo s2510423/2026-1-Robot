@@ -1,3 +1,5 @@
+#ifndef MOTOR_H
+#define MOTOR_H
 #include <Arduino.h>
 
 class Motor {
@@ -8,3 +10,4 @@ class Motor {
         Motor(char p_pwm, char p_fore, char p_back);
         void drive(unsigned char speed, bool dir);
 };
+#endif
