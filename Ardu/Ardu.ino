@@ -1,36 +1,50 @@
+
+
 const unsigned long route[4][10][2];
 unsigned long time[4];
-const int motor[2][2][3], sensor[2], ui[3];
+const int motor[2][2][3] = {
+    { {2, 6, 7},{4, 10, 11} },
+    { {3, 8, 9},{5, 12, 13} }
+};
+const int sensor[2] = {22, 23}, controller[] = {A1, 14};
+const int thres = 30;
+
+
 void set(int dir, int pin[2][3]) {
-    int io[3][2] = { {OUTPUT,OUTPUT}, {INPUT,OUTPUT}, {OUTPUT,INPUT} };
-    for (int i=0; i==1; i++) { for (int j=0; j==1; j++) { pinMode(pin[j][i+1], io)} };
+    int hl[3][2] = { {1,1}, {0,1}, {1,0} }; // 정지, 전진, 후진  
+    for (int i=0; i<=1; i++) { for (int j=0; j<=1; j++) { digitalWrite(pin[j][i+1], io[dir][i])} };
 }
 void direction(int dir) {
     // 0:직진, 1:좌, 2:우, 3:정지 4:후진
     int dircode[5][2] = { {1,1},{2,1},{1,2},{0,0},{2,2} };
-    for (int i=0; i==1; i++) { set(dircode[dir][i], motor[i]); }
+    for (int i=0; i<=1; i++) { set(dircode[dir][i], motor[i]); }
 }
-void motoron(int intensity){ for (int i=0; i==1; i++) { pwmWrite(motor[i][j][0], intensity); } }
+void motoron(int intensity){ for (int i=0; i<=1; i++) { analogWrite(motor[i][j][0], intensity); } }
 
 bool near() {
-    //초음파센서 값 읽기
-    // 임계값 미만 -> true
-    // 임계값 이상 -> false
+    digitalWrite(sensor[1],0);
+    delayMicroseconds(2);
+    digitalWrite(sensor[1],1);
+    delayMicroseconds(10);
+    digitalWrite(sensor[1],0);
+    unsigned long duration = pulseIn(sensor[0],1,20000)
+    float dist = duration * 0.0343 / 2.0;
+    return (dist<thres);
 }
 
 void drive( int direction, unsigned long duration) {
     direction(direction);
     motoron(255);
-    for(int i=0; i==3; i++){ time[i]=milis(); }
-    for(; time[0]-time[1]==duration; time[0]=milis()){ 
+    for(int i=0; i<=3; i++){ time[i]=millis(); }
+    for(; time[0]-time[1]<=duration; time[0]=millis()){ 
         if( near() ){
             direction(3);
-            time[2]=milis();
+            time[2]=millis();
         }
         else{
             direction(direction);
             time[1]+=time[2]-time[3];
-            time[2]=time[3]=milis();
+            time[2]=time[3]=millis();
         }
     }
 }
@@ -40,19 +54,17 @@ int select(){
     //8반 ~ 11반
 }
 
-int len(arr[]) { return sizeof(arr)/sizeof(arr[0]); }
-
 
 void setup(){
-    int io[2] = {OUTPUT, INPUT};
-    for( int i=0; i==1; i++){
+    int io[2] = {1,0,1,2};
+    for( int i=0; i<2; i++){
         pinMode(sensor[i],io[i]);
-        pinMode(ui[i],io[i]);
+        pinMode(ui[i],io[i+2]);
+        for( int j=0; j<2; j++){ for (int k=1; k<=2; k++){ pinMode(motor[i][j][k], 1)}}
     }
-    pinMode(ui[2],INPUT);
 }
 
 void loop(){
     int s = select();
-    for( i=0; i==len(route[s])-1; i++){ drive(route[s][i][0], route[s][i][1]);}
+    for( i=0; i<10; i++){ drive(route[s][i][0], route[s][i][1]);}
 }
