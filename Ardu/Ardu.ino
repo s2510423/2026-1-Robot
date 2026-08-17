@@ -1,23 +1,31 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+
+
 Adafruit_SSD1306 display(128, 64, &Wire);
+Adafruit_MPU6050 mpu;
 
-const unsigned long route[4][10][2]; //TODO: 실제경로 측정후 추가예정.
-
-const int motor[2][2][3] = {
-    { {2, 6, 7},{4, 10, 11} },
-    { {3, 8, 9},{5, 12, 13} }
-};
+const unsigned long route[4][10]; //TODO: 실제경로 측정후 추가예정.
+const int motor[2][2][3] = {   {  {2, 6, 7}, {4, 10, 11}  },  {  {3, 8, 9}, {5, 12, 13}  }   };
 const int sensor[2] = {22, 23}, controller[] = {A1, 14};
 const int thres = 30;
+
 bool moved = false;
 int selected = 0;
-unsigned long time[4];
+float angle = 0.0;
+float angleOffset = 0.0;
+unsigned long time[3];
+
+
 void set(int dir, int pin[2][3]) {
     int hl[3][2] = { {1,1}, {0,1}, {1,0} }; // 정지, 전진, 후진  
     for (int i=0; i<=1; i++) { for (int j=0; j<=1; j++) { digitalWrite(pin[j][i+1], hl[dir][i]);} };
 }
+
+
 void direction(int dir) {
     // 0:직진, 1:좌, 2:우, 3:정지 4:후진
     int dircode[5][2] = { {1,1},{2,1},{1,2},{0,0},{2,2} };
@@ -37,22 +45,36 @@ bool near() {
     return (dist<thres);
 }
 
-void drive( int dir, unsigned long duration) {
+bool arrived() {
+    int i=0;
+}
+
+void gyro(){
+    sensors_event_t a, g, temp;
+    mpu.getEvent(&a, &g, &temp);
+    float deltAngle =  g.gyro.z;
+    time[0] = micros();
+    float dt = (time[0] - time[1] ) / 1000000.0;
+    time[1] = time[0];
+    angle += (deltAngle - angleOffset) * dt * (180.0 / PI);
+}
+
+void drive( int dir) {
     direction(dir);
     motoron(255);
-    for(int i=0; i<4; i++){ time[i]=millis(); }
-    for(; time[0]-time[1]<=duration; time[0]=millis()){ 
-        if( near() ){
-            direction(3);
-            while (near()) { delay(100); }
-            time[2]=millis();
-        }
-        else{
-            direction(dir);
-            time[1]+=time[2]-time[3];
-            time[2]=time[3]=millis();
+    if( dir == 1 || dir == 2) {  for(angle = 0.0;angle<90;gyro()){ direction(dir); }  }
+    else{
+        for(bool finish = false; !finish;){ 
+            if( near() ){
+                direction(3);
+                while (near()) { delay(100); } 
+            }
+            else if(arrived()){ finish = true; }
+            else{ direction(dir); }
         }
     }
+    direction(3);
+    delay(100);
     motoron(0);
 }
 void control(){
@@ -67,9 +89,7 @@ void control(){
         if (selected > 2) selected = 0; 
         moved = true;
     } 
-    else if (Value >= 300 && Value <= 700) {
-        moved = false;
-    }
+    else if (Value >= 300 && Value <= 700) { moved = false; }
 }
 
 
@@ -98,6 +118,22 @@ int select(){
 void setup(){
     Wire.begin();
     display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+    mpu.begin();
+
+    // 센서 측정 범위 세팅 (필요에 따라 조정)
+    mpu.setAccelerometerRange(MPU6050_RANGE_8_G); // 가속도 ±8g
+    mpu.setGyroRange(MPU6050_RANGE_500_DEG);     // 자이로 ±500 deg/s
+    mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);   // 노이즈 필터링
+    
+    for (int i = 0; i < 500; i++) {
+        sensors_event_t a, g, temp;
+        mpu.getEvent(&a, &g, &temp);
+        angleOffset += g.gyro.z;
+        delay(2);
+    }
+    angleOffset *= 0.002;
+    time[1] = micros();
+    
     int io[] = {0, 1};
     pinMode(controller[1], 2);
     for( int i=0; i<2; i++){
@@ -108,5 +144,5 @@ void setup(){
 
 void loop(){
     int s = select();
-    for( int i=0; i<10; i++){ drive(route[s][i][0], route[s][i][1]);}
+    for( int i=0; i<10; i++){ drive(route[s][i]); }
 }
