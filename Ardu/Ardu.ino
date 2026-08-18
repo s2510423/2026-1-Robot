@@ -3,7 +3,9 @@
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
+#include "HUSKYLENS.h"
 
+HUSKYLENS lns;
 Adafruit_SSD1306 display(128, 64, &Wire);
 Adafruit_MPU6050 mpu;
 
@@ -47,7 +49,11 @@ bool near() {
     return (dist<thres);
 }
 
-bool arrived() { /* !!! HUSKYLENS LIBRARY AQUIRED !!! */ return false}
+bool arrived() {
+    HUSKYLENSResult result = lns.read()
+    if(result.ID == 1 && (result.xCenter < 360 || result.xCenter > 0) && (result.yCenter < 240 || result.yCenter > 0)){ return true; }
+    else{ return false; }
+}
 
 void gyro(){
     sensors_event_t a, g, temp;
@@ -55,7 +61,7 @@ void gyro(){
     float deltAngle =  g.gyro.z;
     time[0] = micros();
     float dt = (time[0] - time[1] ) / 1000000.0;
-    time[1] = time[0];
+    for(int i=0;i<2;i++){ time[i] = micros(); }
     angle += (deltAngle - angleOffset) * (180.0 / PI) * dt;
 }
 
@@ -138,6 +144,9 @@ void setup(){
     Wire.begin();
     display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
     mpu.begin();
+    Serial2.begin(38400);
+    lns.begin(Serial2);
+
 
     // 센서 측정 범위 세팅 (필요에 따라 조정)
     mpu.setAccelerometerRange(MPU6050_RANGE_8_G); // 가속도 ±8g
