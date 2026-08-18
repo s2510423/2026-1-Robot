@@ -4,7 +4,6 @@
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 
-
 Adafruit_SSD1306 display(128, 64, &Wire);
 Adafruit_MPU6050 mpu;
 
@@ -17,21 +16,24 @@ bool moved = false;
 int selected = 0;
 float angle = 0.0;
 float angleOffset = 0.0;
-unsigned long time[3];
+unsigned long time[2];
 
 
-void set(int dir, int pin[2][3]) {
+void set(int dir, int pin) {
     int hl[3][2] = { {1,1}, {0,1}, {1,0} }; // 정지, 전진, 후진  
-    for (int i=0; i<=1; i++) { for (int j=0; j<=1; j++) { digitalWrite(pin[j][i+1], hl[dir][i]);} };
+    for (int i=0; i<=1; i++) { for (int j=0; j<=1; j++) { digitalWrite(motor[pin][j][i+1], hl[dir][i]);} };
 }
 
-
-void direction(int dir) {
-    // 0:직진, 1:좌, 2:우, 3:정지 4:후진
+void direction(int dir) { // 0:직진, 1:좌, 2:우, 3:정지 4:후진
     int dircode[5][2] = { {1,1},{2,1},{1,2},{0,0},{2,2} };
-    for (int i=0; i<=1; i++) { set(dircode[dir][i], motor[i]); }
+    for (int i=0; i<=1; i++) { set(dircode[dir][i], i); }
+} 
+void motoron(int left, int right){ 
+    for (int i=0; i<2; i++) { 
+        analogWrite(motor[0][i][0], left); 
+        analogWrite(motor[1][i][0], right); 
+    }
 }
-void motoron(int intensity){ for (int i=0; i<2; i++) { for (int j=0; j<2; j++) {analogWrite(motor[i][j][0], intensity); } } }
 
 bool near() {
     digitalWrite(sensor[1],0);
@@ -45,9 +47,7 @@ bool near() {
     return (dist<thres);
 }
 
-bool arrived() {
-    int i=0;
-}
+bool arrived() { /* !!! HUSKYLENS LIBRARY AQUIRED !!! */ return false}
 
 void gyro(){
     sensors_event_t a, g, temp;
@@ -56,26 +56,47 @@ void gyro(){
     time[0] = micros();
     float dt = (time[0] - time[1] ) / 1000000.0;
     time[1] = time[0];
-    angle += (deltAngle - angleOffset) * dt * (180.0 / PI);
+    angle += (deltAngle - angleOffset) * (180.0 / PI) * dt;
 }
 
-void drive( int dir) {
+void drive(int dir) {
+    int left = 255, right = 255;
+    angle = 0.0;
+    float dead = 3.0;
+    for(int i=0;i<2;i++){ time[i] = micros(); }
+
     direction(dir);
-    motoron(255);
-    if( dir == 1 || dir == 2) {  for(angle = 0.0;angle<90;gyro()){ direction(dir); }  }
+    motoron(left, right);
+    
+    if     ( dir == 1) {  for(;angle< 90;gyro()){ direction(dir); }  }
+    else if( dir == 2) {  for(;angle>-90;gyro()){ direction(dir); }  }
     else{
-        for(bool finish = false; !finish;){ 
+        for(bool finish = false; !finish; motoron(left,right)){ 
             if( near() ){
                 direction(3);
                 while (near()) { delay(100); } 
             }
             else if(arrived()){ finish = true; }
-            else{ direction(dir); }
+            else{ 
+                gyro();
+                if( angle < -1*dead || angle > dead){
+                    if(angle<0){
+                        if(left<=245){ left+=10; }
+                        else if (right>=10){ right-=10; }
+                    }
+                    else if(angle>0){
+                        if(right<=245){ right+=10; }
+                        else if (left>=10){ left-=10; }
+                    }
+                }
+                direction(dir); 
+            }
         }
     }
+    angle = 0.0;
     direction(3);
     delay(100);
-    motoron(0);
+    motoron(0,0);
 }
 void control(){
     int Value = analogRead(controller[0]);
@@ -91,7 +112,6 @@ void control(){
     } 
     else if (Value >= 300 && Value <= 700) { moved = false; }
 }
-
 
 void menu(){
     display.clearDisplay();
@@ -113,7 +133,6 @@ int select(){
         }
     }
 }
-
 
 void setup(){
     Wire.begin();
