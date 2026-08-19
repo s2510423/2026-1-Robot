@@ -9,16 +9,28 @@ HUSKYLENS lns;
 Adafruit_SSD1306 display(128, 64, &Wire);
 Adafruit_MPU6050 mpu;
 
-const unsigned long route[4][10]; //TODO: 실제경로 측정후 추가예정.
-const int motor[2][2][3] = {   {  {2, 6, 7}, {4, 10, 11}  },  {  {3, 8, 9}, {5, 12, 13}  }   };
-const int sensor[2] = {22, 23}, controller[] = {A1, 14};
+const int route[2][4][6] = {
+    {  
+        {0,1,0,3,3,3}, 
+        {0,1,0,0,3,3}, 
+        {0,1,0,0,0,3}, 
+        {0,1,0,0,0,0}  
+    },   
+    {  
+        {0,2,0,3,3,3}, 
+        {0,0,2,0,3,3}, 
+        {0,0,0,2,0,3}, 
+        {0,0,0,0,2,0}  
+    }    
+};                                                                      
+const int motor[2][2][3] = {   {  {2, 6, 7}, {4, 10, 11}  },  {  {3, 8, 9}, {5, 12, 13}  }   }, 
+const int sensor[2] = {22, 23}, controller[3] = {A0, A1, 14};
 const int thres = 30;
 
 bool moved = false;
-int selected = 0;
-float angle = 0.0;
-float angleOffset = 0.0;
-unsigned long time[2];
+int selected[2] = {0,0};
+float angle = 0.0, angleOffset = 0.0;
+unsigned long time[2] = {0,0};
 
 
 void set(int dir, int pin) {
@@ -44,7 +56,7 @@ bool near() {
     delayMicroseconds(10);
     digitalWrite(sensor[1],0);
     unsigned long duration = pulseIn(sensor[0],1,20000);
-    if (duration == 0) return false;
+    if(duration == 0){ return false;}
     float dist = duration * 0.0343 / 2.0;
     return (dist<thres);
 }
@@ -88,11 +100,11 @@ void drive(int dir) {
                 if( angle < -1*dead || angle > dead){
                     if(angle<0){
                         if(left<=245){ left+=10; }
-                        else if (right>=10){ right-=10; }
+                        else if(right>=10){ right-=10; }
                     }
                     else if(angle>0){
                         if(right<=245){ right+=10; }
-                        else if (left>=10){ left-=10; }
+                        else if(left>=10){ left-=10; }
                     }
                 }
                 direction(dir); 
@@ -105,37 +117,50 @@ void drive(int dir) {
     motoron(0,0);
 }
 void control(){
-    int Value = analogRead(controller[0]);
-    if (Value < 300 && !moved) {
-        selected--;
-        if (selected < 0) selected = 3;
+    int Value = analogRead(controller[1]);
+    if(Value < 300 && !moved) {
+        selected[1]--;
+        if(selected[1] < 0){ selected[1] = 3; }
         moved = true;
     } 
-    else if (Value > 700 && !moved) {
-        selected++;
-        if (selected > 2) selected = 0; 
+    else if(Value > 700 && !moved) {
+        selected[1]++;
+        if(selected[1] > 2){ selected[1] = 0; }
         moved = true;
     } 
-    else if (Value >= 300 && Value <= 700) { moved = false; }
+    else if(Value >= 300 && Value <= 700) { moved = false; }
 }
+
+void departure(){
+    int Value = analogRead(controller[0]);
+    if((Value < 300 || Value > 700) && !moved) {
+        if(selected[0] == 0){ selected[0] = 1; }
+        else if(selected[0] == 1){ selected[0] = 0; }
+        moved = true;
+    }
+    else if(Value >= 300 && Value <= 700) { moved = false; }
+}   
 
 void menu(){
     display.clearDisplay();
     display.setTextSize(2);
     display.setTextColor(SSD1306_WHITE);
     display.setCursor(10, 24);
+    if(selected[0] == 0){ dislay.print("Arrival:        "); }
+    else if(selected[0] == 1){ display.print("Departure from: "); }
     display.print("Class ");
-    display.println(8+selected);
+    display.println(8+selected[1]);
     display.display();
 }
-int select(){
+void select(){
     
     while (true) {
         control();
+        departure();
         menu();      
-        if (digitalRead(controller[1]) == LOW) {
+        if(digitalRead(controller[2]) == LOW) {
             delay(200); 
-            return selected;
+            break;
         }
     }
 }
@@ -145,7 +170,7 @@ void setup(){
     display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
     mpu.begin();
     Serial2.begin(38400);
-    lns.begin(Serial2);
+    while(!lns.begin(Serial2)){delay(100);};
 
 
     // 센서 측정 범위 세팅 (필요에 따라 조정)
@@ -171,6 +196,6 @@ void setup(){
 }
 
 void loop(){
-    int s = select();
-    for( int i=0; i<10; i++){ drive(route[s][i]); }
+    select();
+    for( int i=0; i<6; i++){ drive(route[select[0]][select[1]][i]); }
 }
