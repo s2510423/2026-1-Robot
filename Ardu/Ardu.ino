@@ -160,7 +160,7 @@ check if there is tag seen in the sight of HUSKYLENS
 
     used in: void drive(int dir)
 */
-    HUSKYLENSResult result = lns.read()
+    HUSKYLENSResult result = lns.read(); 
     if(result.ID == 1 && (result.xCenter < 300 || result.xCenter > 60) && (result.yCenter < 200 || result.yCenter > 40)){ return true; }
     else{ return false; }
 }
@@ -188,7 +188,7 @@ read angle rotation data from gyro sensor
     float deltAngle =  g.gyro.z;
     time[0] = micros();
     float dt = (time[0] - time[1] ) / 1000000.0;
-    for(int i=0;i<2;i++){ time[i] = micros(); }
+    time[1] = time[0];
     angle += (deltAngle - angleOffset) * (180.0 / PI) * dt;
 }
 
@@ -246,7 +246,7 @@ drive mobile by hard-coded route array
                     else if(left>=10){ left-=10; }
                 }
                 direction(dir); 
-                motorOn(left,right)
+                motorOn(left, right);
             }
         }
     }
@@ -329,7 +329,7 @@ display selection menu
     display.setTextSize(2);
     display.setTextColor(SSD1306_WHITE);
     display.setCursor(10, 24);
-    if(selected[0] == 0){ dislay.print("Arrival:        "); }
+    if(selected[0] == 0){ display.print("Arrival:        "); }
     else if(selected[0] == 1){ display.print("Departure from: "); }
     display.print("Class ");
     display.println(8+selected[1]);
@@ -393,5 +393,5 @@ void setup(){
 void loop(){
 // selection -> route based driving loop
     select();
-    for( int i=0; i<6; i++){ drive(route[selected[0]][selected[1]][i]); }
+    for( int i=0; i<8; i++){ drive(route[selected[0]][selected[1]][i]); }
 }
