@@ -10,11 +10,14 @@
 // for DFRobot HUSKYLENS
 #include "HUSKYLENS.h"
 
+// for servo motor
+#include <Servo.h>
+
 // Define HUSKYLENS, DISPLAY, SENSOR
 HUSKYLENS lns;
 Adafruit_SSD1306 display(128, 64, &Wire);
 Adafruit_MPU6050 mpu;
-
+Servo sv;
 
 /* array of direction codes of routes between teachers' office and each classrooms */
 const int route[2][4][8] = {
@@ -40,6 +43,7 @@ const int motor[2][2][3] = {   // {IN1, IN2, PWM}
 
 const int sensor[3] = {22/*echo*/, 23/*trig*/, 44/*servo*/}; // sensor pin array
 const float threshold = 30.0; //threshold of distance: in function ( bool near() )
+bool servoMoved = false; // for function ( void sensorServo() )
 
 const int controller[3] = {A0/*right-left*/, A1/*up-down*/, 14/*button*/}; // joystick pin arrray
 bool moved[2] = {false, false}; // represents whether joystick is moved in function ( void select() ), ( void departure() )
@@ -48,7 +52,7 @@ bool moved[2] = {false, false}; // represents whether joystick is moved in funct
 int selected[2] = {0,0}; // selected index of const int route[2][4][6]
 
 float angle = 0.0, angleOffset = 0.0; // measured with gyro seneor in function ( void gyro() )
-unsigned long time[2] = {0,0}; // for integration while measuring ( float angle ) in function ( void gyro() )
+unsigned long time[3] = {0,0,0}; // for integration while measuring ( float angle ) in function ( void gyro() )
 
 
 /*[FORM OF DESCRIPTION OF FUNCTIONS]*/
@@ -94,7 +98,7 @@ control direction of the mobile
 */
     int hl[3][2] = { {HIGH,HIGH}/*stop*/, {LOW,HIGH}/*forward*/, {HIGH,LOW}/*backward*/ };
     int dircode[5][2] = { {1,1}/*forward*/,{2,1}/*turn left*/,{1,2}/*turn right*/,{0,0}/*stop*/,{2,2}/*backward*/ };
-    for (int i=0; i<=1; i++) { for (int j=0; j<2; j++) { for (int k=0; k<2; k++) { digitalWrite(motor[i][j][k], hl[dircode[dir]][k]);} }; }
+    for (int i=0; i<=1; i++) { for (int j=0; j<2; j++) { for (int k=0; k<2; k++) { digitalWrite(motor[i][j][k], hl[dircode[dir][i]][k]);} }; }
 } 
 
 
@@ -145,7 +149,35 @@ measure distance between mobile and other object and returns wheter their distan
     if(distance == 0){ return false; }
     return (distance < threshold);
 }
+void sensorServo(){
+/* 
+move servo motor constantly for wide range of distance measurement
 
+    parameters: no parameter
+
+    constants: const int 
+
+    variables:
+        local : unsigned long delay
+        global: 
+            unsigned long time[3]
+            bool servoMoved
+    used in: void drive(int dir)
+*/
+    unsigned long servoDelay = 500000;
+    time[0] = micros();
+    if ( time[0] - time[1] >= servoDelay ){
+        if (  servoMoved ){ 
+            servoMoved = false; 
+            sv.write(0);
+        }
+        else { 
+            servoMoved = true ;
+            sv.write(180);
+        }
+        time[1] = time[0];
+    }
+}
 bool arrived() {
 /* 
 check if there is tag seen in the sight of HUSKYLENS
@@ -178,7 +210,7 @@ read angle rotation data from gyro sensor
             float deltAngle, dt
             sensors_event_t a, g, temp
         global: 
-            int time[2]
+            int time[3]
             float angleOffset, angle
 
     used in: void drive(int dir)
@@ -214,7 +246,7 @@ drive mobile by hard-coded route array
             int left, right: intensity of function { void motorOn(int left, int right) }
             float dead: deadline of angle tolerance during going straight
         global:
-            int time[2]
+            int time[3]
             float angle
 
     used in: void loop()
@@ -231,9 +263,9 @@ drive mobile by hard-coded route array
     else if( dir == 0){
         for(bool finish = false; !finish; finish = arrived()){
             gyro();
+            sensorServo();
             if( near() ){
-                direction(3);
-                while (near()) { delay(100); } 
+                direction(3); 
             }
             else if( angle < -1*dead || angle > dead){
                 if(angle<0){
@@ -269,6 +301,7 @@ joystick - up and down
         global: 
             bool moved[2]
             int selected[2]
+
     used in: void select()
 */
     int value = analogRead(controller[1]);
@@ -298,7 +331,8 @@ joystick - left and right
             int value: analog read value from controller pin
         global: 
             bool moved
-            int selected[2]
+            int selected[]
+            
     used in: void select()
 */
     int value = analogRead(controller[0]);
@@ -366,7 +400,7 @@ void setup(){
     while(!lns.begin(Serial2)){delay(100);};
 
 
-    // range of sensor measurment
+    // range of gyro sensor measurment
     mpu.setAccelerometerRange(MPU6050_RANGE_8_G); // accelerometer ±8g
     mpu.setGyroRange(MPU6050_RANGE_500_DEG);      // gyro ±500 deg/s
     mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);   // noise filter
@@ -382,7 +416,8 @@ void setup(){
     time[1] = micros();
     
     // pin settings
-    int io[] = {INPUT, OUTPUT};
+    sv.attach(sensor[2]);
+    int io[2] = {INPUT, OUTPUT};
     pinMode(controller[2], INPUT_PULLUP);
     for( int i=0; i<2; i++){
         pinMode(sensor[i],io[i]);
