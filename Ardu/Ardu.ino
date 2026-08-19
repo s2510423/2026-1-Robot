@@ -33,12 +33,12 @@ const int route[2][4][8] = {
 };
 
 /* array of pin numbers of motors */
-const int motor[2][2][3] = {   // {direction1, direction2, PWM}
+const int motor[2][2][3] = {   // {IN1, IN2, PWM}
     { {6 , 7 , 2 }, /* front left */ {10, 11, 4 } /* front right */ },  
     { {8 , 9 , 3 }, /* back  lect */ {12, 13, 5 } /* back  right */ }   
 };
 
-const int sensor[2] = {22/*echo*/, 23/*trig*/}; // sensor pin array
+const int sensor[3] = {22/*echo*/, 23/*trig*/, 44/*servo*/}; // sensor pin array
 const float threshold = 30.0; //threshold of distance: in function ( bool near() )
 
 const int controller[3] = {A0/*right-left*/, A1/*up-down*/, 14/*button*/}; // joystick pin arrray
@@ -94,7 +94,7 @@ control direction of the mobile
 */
     int hl[3][2] = { {HIGH,HIGH}/*stop*/, {LOW,HIGH}/*forward*/, {HIGH,LOW}/*backward*/ };
     int dircode[5][2] = { {1,1}/*forward*/,{2,1}/*turn left*/,{1,2}/*turn right*/,{0,0}/*stop*/,{2,2}/*backward*/ };
-    for (int i=0; i<=1; i++) { for (int j=0; j<2; j++) { for (int k=0; k<2; k++) { digitalWrite(motor[i][j][k], hl[dircode[dir]][j]);} }; }
+    for (int i=0; i<=1; i++) { for (int j=0; j<2; j++) { for (int k=0; k<2; k++) { digitalWrite(motor[i][j][k], hl[dircode[dir]][k]);} }; }
 } 
 
 
@@ -113,8 +113,8 @@ turn on the motor with proper intensity
     used in: void drive(int dir)
 */
     for (int i=0; i<2; i++) { 
-        analogWrite(motor[0][i][2], left); 
-        analogWrite(motor[1][i][2], right); 
+        analogWrite(motor[i][0][0], left); 
+        analogWrite(motor[i][1][0], right); 
     }
 }
 
@@ -126,7 +126,7 @@ measure distance between mobile and other object and returns wheter their distan
     parameters: no parameter.
 
     constants: 
-        const int sensor[2]
+        const int sensor[3]
         const float threshold
 
     variables: 
@@ -142,7 +142,7 @@ measure distance between mobile and other object and returns wheter their distan
     delayMicroseconds(10);
     digitalWrite(sensor[1],LOW );
     float distance = pulseIn(sensor[0],1,20000) * 0.0343 / 2.0;
-    if(distance == 0){ return false;}
+    if(distance == 0){ return false; }
     return (distance < threshold);
 }
 
@@ -227,8 +227,7 @@ drive mobile by hard-coded route array
     direction(dir);
     motorOn(left, right);
     
-    if     ( dir == 1) {  for(;angle< 90;gyro()){ direction(dir); }  }
-    else if( dir == 2) {  for(;angle>-90;gyro()){ direction(dir); }  }
+    if     ( 1 <= dir || dir <= 2) {  for(;abs(angle)<90;gyro()){ direction(dir); }  }
     else if( dir == 0){
         for(bool finish = false; !finish; finish = arrived()){
             gyro();
@@ -268,22 +267,22 @@ joystick - up and down
         local : 
             int value: analog read value from controller pin
         global: 
-            bool moved
+            bool moved[2]
             int selected[2]
     used in: void select()
 */
     int value = analogRead(controller[1]);
-    if(value < 300 && !moved) {
+    if(value < 300 && !moved[1]) {
         selected[1]--;
         if(selected[1] < 0){ selected[1] = 3; }
-        moved = true;
+        moved[1] = true;
     } 
-    else if(value > 700 && !moved) {
+    else if(value > 700 && !moved[1]) {
         selected[1]++;
         if(selected[1] > 2){ selected[1] = 0; }
-        moved = true;
+        moved[1] = true;
     } 
-    else if(value >= 300 && value <= 700) { moved = false; }
+    else if(value >= 300 && value <= 700) { moved[1] = false; }
 }
 
 void departure(){
@@ -303,12 +302,12 @@ joystick - left and right
     used in: void select()
 */
     int value = analogRead(controller[0]);
-    if((value < 300 || value > 700) && !moved) {
+    if((value < 300 || value > 700) && !moved[1]) {
         if(selected[0] == 0){ selected[0] = 1; }
         else if(selected[0] == 1){ selected[0] = 0; }
-        moved = true;
+        moved[1] = true;
     }
-    else if(value >= 300 && value <= 700) { moved = false; }
+    else if(value >= 300 && value <= 700) { moved[1] = false; }
 }   
 
 void menu(){
@@ -384,10 +383,10 @@ void setup(){
     
     // pin settings
     int io[] = {INPUT, OUTPUT};
-    pinMode(controller[1], INPUT_PULLUP);
+    pinMode(controller[2], INPUT_PULLUP);
     for( int i=0; i<2; i++){
         pinMode(sensor[i],io[i]);
-        for( int j=0; j<2; j++){ for (int k=1; k<=2; k++){ pinMode(motor[i][j][k], OUTPUT);}}
+        for( int j=0; j<2; j++){ for (int k=0; k<3; k++){ pinMode(motor[i][j][k], OUTPUT);}}
     }
 }
 void loop(){
