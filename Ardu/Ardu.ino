@@ -52,7 +52,7 @@ bool moved[2] = {false, false}; // represents whether joystick is moved in funct
 int selected[2] = {0,0}; // selected index of const int route[2][4][6]
 
 float angle = 0.0, angleOffset = 0.0; // measured with gyro seneor in function ( void gyro() )
-unsigned long time[3] = {0,0,0}; // for integration while measuring ( float angle ) in function ( void gyro() )
+unsigned long time[4] = {0,0,0,0}; // for integration while measuring ( float angle ) in function ( void gyro() )
 
 
 /*[FORM OF DESCRIPTION OF FUNCTIONS]*/
@@ -96,8 +96,8 @@ control direction of the mobile
 
     used in: void drive(int dir)
 */
-    int hl[3][2] = { {HIGH,HIGH}/*stop*/, {LOW,HIGH}/*forward*/, {HIGH,LOW}/*backward*/ };
-    int dircode[5][2] = { {1,1}/*forward*/,{2,1}/*turn left*/,{1,2}/*turn right*/,{0,0}/*stop*/,{2,2}/*backward*/ };
+    int hl[3][2] = { {HIGH,HIGH}/*stop*/, {LOW,HIGH}/*forward*/, {HIGH,LOW}/*backward*/ }; 
+    int dircode[5][2] = { {1,1}/*forward*/,{2,1}/*turn left*/,{1,2}/*turn right*/,{0,0}/*stop*/,{2,2}/*backward*/ }; 
     for (int i=0; i<=1; i++) { for (int j=0; j<2; j++) { for (int k=0; k<2; k++) { digitalWrite(motor[i][j][k], hl[dircode[dir][i]][k]);} }; }
 } 
 
@@ -148,6 +148,7 @@ measure distance between mobile and other object and returns wheter their distan
     float distance = pulseIn(sensor[0],1,20000) * 0.0343 / 2.0;
     if(distance == 0){ return false; }
     return (distance < threshold);
+    
 }
 void sensorServo(){
 /* 
@@ -160,7 +161,7 @@ move servo motor constantly for wide range of distance measurement
     variables:
         local : unsigned long delay
         global: 
-            unsigned long time[3]
+            unsigned long time[4]
             bool servoMoved
     used in: void drive(int dir)
 */
@@ -187,13 +188,24 @@ check if there is tag seen in the sight of HUSKYLENS
     constants: no constant
 
     variables:
-        local : HUSKYLENSResult result: information given by HUSKYLENS 
-        global: no global variable
+        local : 
+            HUSKYLENSResult result: information given by HUSKYLENS 
+            unsigned long huskyDelay: delay of huskylens
+        global: unsigned long time[4]
 
     used in: void drive(int dir)
 */
+    unsigned long huskyDelay = 10000000
+    time[0] = micros()
     HUSKYLENSResult result = lns.read(); 
-    if(result.ID == 1 && (result.xCenter < 300 || result.xCenter > 60) && (result.yCenter < 200 || result.yCenter > 40)){ return true; }
+    if(
+        time[0] - time[2] >= huskyDelay &&  result.ID == 1 && 
+        (result.xCenter < 300 || result.xCenter > 60) && 
+        (result.yCenter < 200 || result.yCenter > 40)
+    ){ 
+        time[1] = time[0];
+        return true; 
+    }
     else{ return false; }
 }
 
@@ -210,7 +222,7 @@ read angle rotation data from gyro sensor
             float deltAngle, dt
             sensors_event_t a, g, temp
         global: 
-            int time[3]
+            int time[4]
             float angleOffset, angle
 
     used in: void drive(int dir)
@@ -246,26 +258,31 @@ drive mobile by hard-coded route array
             int left, right: intensity of function { void motorOn(int left, int right) }
             float dead: deadline of angle tolerance during going straight
         global:
-            int time[3]
+            int time[4]
             float angle
 
     used in: void loop()
 */
+    // initialize main variables
     int left = 255, right = 255;
     angle = 0.0;
     float dead = 3.0;
     for(int i=0;i<2;i++){ time[i] = micros(); }
-
+    // initialize motor output
     direction(dir);
     motorOn(left, right);
-    
-    if     ( 1 <= dir || dir <= 2) {  for(;abs(angle)<90;gyro()){ direction(dir); }  }
+    // rotation
+    if     ( 1 >= dir && dir <= 2) {  for(;abs(angle)<90;gyro()){ direction(dir); }  }
+    //straight
     else if( dir == 0){
         for(bool finish = false; !finish; finish = arrived()){
             gyro();
             sensorServo();
             if( near() ){
-                direction(3); 
+                time[0] = micros();
+                while( near() ){direction(3);} 
+                time[3] = micros();
+                time[2] += time[3]-time[0];
             }
             else if( angle < -1*dead || angle > dead){
                 if(angle<0){
@@ -336,10 +353,10 @@ joystick - left and right
     used in: void select()
 */
     int value = analogRead(controller[0]);
-    if((value < 300 || value > 700) && !moved[1]) {
+    if((value < 300 || value > 700) && !moved[0]) {
         if(selected[0] == 0){ selected[0] = 1; }
         else if(selected[0] == 1){ selected[0] = 0; }
-        moved[1] = true;
+        moved[0] = true;
     }
     else if(value >= 300 && value <= 700) { moved[1] = false; }
 }   
