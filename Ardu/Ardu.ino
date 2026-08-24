@@ -47,7 +47,7 @@ bool servoMoved = false; // for function ( void sensorServo() )
 
 const int controller[3] = {A0/*right-left*/, A1/*up-down*/, 14/*button*/}; // joystick pin arrray
 bool moved[2] = {false, false}; // represents whether joystick is moved in function ( void select() ), ( void departure() )
-
+int finish = 0;
 
 int selected[2] = {0,0}; // selected index of const int route[2][4][6]
 
@@ -57,89 +57,85 @@ unsigned long time[4] = {0,0,0,0}; // for integration while measuring ( float an
 
 /*[FORM OF DESCRIPTION OF FUNCTIONS]*/
 
-/* 
-description: 
+    /* 
+    description: 
 
-    parameters: 
+        parameters: 
 
-    constants:
+        constants:
 
-    variables:
-        local :
-        global:
+        variables:
+            local :
+            global:
 
-    used in:
-*/
+        used in:
+    */
 
 
 
 
 void direction(int dir) {
-/*
-control direction of the mobile
+    /*
+    control direction of the mobile
 
-    parameters:
-        int dir: direction. 
-            0: forward
-            1: left
-            2: right
-            3: stop
-            4: backward
+        parameters:
+            int dir: direction. 
+                0: forward
+                1: left
+                2: right
+                3: stop
+                4: backward
 
-    constants: const int motor[2][2][3]
+        constants: const int motor[2][2][3]
 
-    variables:
-        local :
-            int hl[3][2]: direction of ONE SPECIFIC MOTOR
-            int dircode[5][2]: direction of WHOLE MOBILE
-        global: not used.
+        variables:
+            local :
+                int hl[3][2]: direction of ONE SPECIFIC MOTOR
+                int dircode[5][2]: direction of WHOLE MOBILE
+            global: not used.
 
-    used in: void drive(int dir)
-*/
+        used in: void drive(int dir)
+    */
     int hl[3][2] = { {HIGH,HIGH}/*stop*/, {LOW,HIGH}/*forward*/, {HIGH,LOW}/*backward*/ }; 
     int dircode[5][2] = { {1,1}/*forward*/,{2,1}/*turn left*/,{1,2}/*turn right*/,{0,0}/*stop*/,{2,2}/*backward*/ }; 
     for (int i=0; i<=1; i++) { for (int j=0; j<2; j++) { for (int k=0; k<2; k++) { digitalWrite(motor[i][j][k], hl[dircode[dir][i]][k]);} }; }
 } 
-
-
 void motorOn(int left, int right){ 
-/* 
-turn on the motor with proper intensity
+    /* 
+    turn on the motor with proper intensity
 
-    parameters:
-        int left : intensity of left  motors
-        int right: intensity of right motors
+        parameters:
+            int left : intensity of left  motors
+            int right: intensity of right motors
 
-    constants: const int motor[2][2][3]
+        constants: const int motor[2][2][3]
 
-    variables: not used.
+        variables: not used.
 
-    used in: void drive(int dir)
-*/
+        used in: void drive(int dir)
+    */
     for (int i=0; i<2; i++) { 
         analogWrite(motor[i][0][0], left); 
         analogWrite(motor[i][1][0], right); 
     }
 }
-
-
 bool near() {
-/* 
-measure distance between mobile and other object and returns wheter their distance is lower than threshold or not
+    /* 
+    measure distance between mobile and other object and returns wheter their distance is lower than threshold or not
 
-    parameters: no parameter.
+        parameters: no parameter.
 
-    constants: 
-        const int sensor[3]
-        const float threshold
+        constants: 
+            const int sensor[3]
+            const float threshold
 
-    variables: 
-        local : float distance: in centemeter unit
-        global: no global variable.
+        variables: 
+            local : float distance: in centemeter unit
+            global: no global variable.
 
-    used in:
-        void dirve(int dir)
-*/
+        used in:
+            void dirve(int dir)
+    */
     digitalWrite(sensor[1],LOW );
     delayMicroseconds(2);
     digitalWrite(sensor[1],HIGH);
@@ -151,20 +147,20 @@ measure distance between mobile and other object and returns wheter their distan
     
 }
 void sensorServo(){
-/* 
-move servo motor constantly for wide range of distance measurement
+    /* 
+    move servo motor constantly for wide range of distance measurement
 
-    parameters: no parameter
+        parameters: no parameter
 
-    constants: const int 
+        constants: const int 
 
-    variables:
-        local : unsigned long delay
-        global: 
-            unsigned long time[4]
-            bool servoMoved
-    used in: void drive(int dir)
-*/
+        variables:
+            local : unsigned long delay
+            global: 
+                unsigned long time[4]
+                bool servoMoved
+        used in: void drive(int dir)
+    */
     unsigned long servoDelay = 500000;
     time[0] = micros();
     if ( time[0] - time[1] >= servoDelay ){
@@ -180,53 +176,48 @@ move servo motor constantly for wide range of distance measurement
     }
 }
 bool arrived() {
-/* 
-check if there is tag seen in the sight of HUSKYLENS
+    /* 
+    check if there is tag seen in the sight of HUSKYLENS
 
-    parameters: no parameter
+        parameters: no parameter
 
-    constants: no constant
+        constants: no constant
 
-    variables:
-        local : 
-            HUSKYLENSResult result: information given by HUSKYLENS 
-            unsigned long huskyDelay: delay of huskylens
-        global: unsigned long time[4]
+        variables:
+            local : 
+                HUSKYLENSResult result: information given by HUSKYLENS 
+                unsigned long huskyDelay: delay of huskylens
+            global: unsigned long time[4]
 
-    used in: void drive(int dir)
-*/
-    unsigned long huskyDelay = 10000000
+        used in: void drive(int dir)
+    */
+
     time[0] = micros()
     HUSKYLENSResult result = lns.read(); 
-    if(
-        time[0] - time[2] >= huskyDelay &&  result.ID == 1 && 
-        (result.xCenter < 300 || result.xCenter > 60) && 
-        (result.yCenter < 200 || result.yCenter > 40)
-    ){ 
+    if( result.ID == 1 && (result.xCenter < 300 || result.xCenter > 60) && (result.yCenter < 200 || result.yCenter > 40)){ 
         time[1] = time[0];
         return true; 
     }
     else{ return false; }
 }
-
 void gyro(){
-/* 
-read angle rotation data from gyro sensor
+    /* 
+    read angle rotation data from gyro sensor
 
-    parameters: no parameter
+        parameters: no parameter
 
-    constants: no constant
+        constants: no constant
 
-    variables:
-        local :
-            float deltAngle, dt
-            sensors_event_t a, g, temp
-        global: 
-            int time[4]
-            float angleOffset, angle
+        variables:
+            local :
+                float deltAngle, dt
+                sensors_event_t a, g, temp
+            global: 
+                int time[4]
+                float angleOffset, angle
 
-    used in: void drive(int dir)
-*/
+        used in: void drive(int dir)
+    */
     sensors_event_t a, g, temp;
     mpu.getEvent(&a, &g, &temp);
     float deltAngle =  g.gyro.z;
@@ -235,38 +226,60 @@ read angle rotation data from gyro sensor
     time[1] = time[0];
     angle += (deltAngle - angleOffset) * (180.0 / PI) * dt;
 }
-
+void straight(){
+    float dead = 3.0;
+    gyro();
+    sensorServo();
+    if( near() ){
+        time[0] = micros();
+        while( near() ){direction(3);} 
+        time[3] = micros();
+        time[2] += time[3]-time[0];
+    }
+    else if( angle < -1*dead || angle > dead){
+        if(angle<0){
+            if(left<=245){ left+=10; }
+            else if(right>=10){ right-=10; }
+        }
+        else if(angle>0){
+            if(right<=245){ right+=10; }
+            else if(left>=10){ left-=10; }
+        }
+        direction(0); 
+        motorOn(left, right);
+    }
+}
 void drive(int dir) { 
-/* 
-drive mobile by hard-coded route array
+    /* 
+    drive mobile by hard-coded route array
 
-    parameters: 
-        int dir: direction. 
-            0: forward
-            1: left
-            2: right
-            3: stop
-            4: backward
+        parameters: 
+            int dir: direction. 
+                0: forward
+                1: left
+                2: right
+                3: stop
+                4: backward
 
-    constants:
-        const int motor[2][2][3]
-        const int route[2][4][8]
+        constants:
+            const int motor[2][2][3]
+            const int route[2][4][8]
 
-    variables:
-        local : 
-            bool finish: monitor wheter movement should finish
-            int left, right: intensity of function { void motorOn(int left, int right) }
-            float dead: deadline of angle tolerance during going straight
-        global:
-            int time[4]
-            float angle
+        variables:
+            local : 
+                bool finish: monitor wheter movement should finish
+                int left, right: intensity of function { void motorOn(int left, int right) }
+                float dead: deadline of angle tolerance during going straight
+            global:
+                int time[4]
+                float angle
 
-    used in: void loop()
-*/
+        used in: void loop()
+    */
+
     // initialize main variables
     int left = 255, right = 255;
     angle = 0.0;
-    float dead = 3.0;
     for(int i=0;i<2;i++){ time[i] = micros(); }
     // initialize motor output
     direction(dir);
@@ -275,52 +288,38 @@ drive mobile by hard-coded route array
     if     ( 1 >= dir && dir <= 2) {  for(;abs(angle)<90;gyro()){ direction(dir); }  }
     //straight
     else if( dir == 0){
-        for(bool finish = false; !finish; finish = arrived()){
-            gyro();
-            sensorServo();
-            if( near() ){
-                time[0] = micros();
-                while( near() ){direction(3);} 
-                time[3] = micros();
-                time[2] += time[3]-time[0];
-            }
-            else if( angle < -1*dead || angle > dead){
-                if(angle<0){
-                    if(left<=245){ left+=10; }
-                    else if(right>=10){ right-=10; }
-                }
-                else if(angle>0){
-                    if(right<=245){ right+=10; }
-                    else if(left>=10){ left-=10; }
-                }
-                direction(dir); 
-                motorOn(left, right);
-            }
+        for(;arrived() && finish == 1;){
+
         }
+        for(;finish != 1;){
+                straight(dir);
+                arrived();
+            }
+        
+        finish = 1;
     }
     angle = 0.0;
     direction(3);
     delay(100);
     motorOn(0,0);
 }
-
 void control(){
-/* 
-joystick - up and down
+    /* 
+    joystick - up and down
 
-    parameters: no parameter
+        parameters: no parameter
 
-    constants: const int controller[3]
+        constants: const int controller[3]
 
-    variables:
-        local : 
-            int value: analog read value from controller pin
-        global: 
-            bool moved[2]
-            int selected[2]
+        variables:
+            local : 
+                int value: analog read value from controller pin
+            global: 
+                bool moved[2]
+                int selected[2]
 
-    used in: void select()
-*/
+        used in: void select()
+    */
     int value = analogRead(controller[1]);
     if(value < 300 && !moved[1]) {
         selected[1]--;
@@ -334,24 +333,23 @@ joystick - up and down
     } 
     else if(value >= 300 && value <= 700) { moved[1] = false; }
 }
-
 void departure(){
-/* 
-joystick - left and right
+    /* 
+    joystick - left and right
 
-    parameters: no parameter
+        parameters: no parameter
 
-    constants: const int controller[3]
+        constants: const int controller[3]
 
-    variables:
-        local : 
-            int value: analog read value from controller pin
-        global: 
-            bool moved
-            int selected[]
-            
-    used in: void select()
-*/
+        variables:
+            local : 
+                int value: analog read value from controller pin
+            global: 
+                bool moved
+                int selected[]
+                
+        used in: void select()
+    */
     int value = analogRead(controller[0]);
     if((value < 300 || value > 700) && !moved[0]) {
         if(selected[0] == 0){ selected[0] = 1; }
@@ -360,21 +358,20 @@ joystick - left and right
     }
     else if(value >= 300 && value <= 700) { moved[1] = false; }
 }   
-
 void menu(){
-/* 
-display selection menu
+    /* 
+    display selection menu
 
-    parameters: no parameter
+        parameters: no parameter
 
-    constants: no constant
+        constants: no constant
 
-    variables:
-        local : no local variable
-        global: int selected[2]
+        variables:
+            local : no local variable
+            global: int selected[2]
 
-    used in: void select()
-*/
+        used in: void select()
+    */
     display.clearDisplay();
     display.setTextSize(2);
     display.setTextColor(SSD1306_WHITE);
@@ -386,17 +383,17 @@ display selection menu
     display.display();
 }
 void select(){
-/* 
-total user interface for route selection
+    /* 
+    total user interface for route selection
 
-    parameters: no parameter
+        parameters: no parameter
 
-    constants: const int controller[3]
+        constants: const int controller[3]
 
-    variables: no variable
+        variables: no variable
 
-    used in: void loop()
-*/   
+        used in: void loop()
+    */   
     while (true) {
         control();
         departure();
@@ -407,7 +404,6 @@ total user interface for route selection
         }
     }
 }
-
 void setup(){
     // begin connections
     Wire.begin();
@@ -442,7 +438,7 @@ void setup(){
     }
 }
 void loop(){
-// selection -> route based driving loop
+    // selection -> route based driving loop
     select();
     for( int i=0; i<8; i++){ drive(route[selected[0]][selected[1]][i]); }
 }
