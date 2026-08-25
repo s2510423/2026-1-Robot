@@ -1,62 +1,53 @@
-// Libraries for DISPLAY
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
-
-// for GYRO SENSOR
-#include <Adafruit_MPU6050.h>
-#include <Adafruit_Sensor.h>
-
-// for DFRobot HUSKYLENS
-#include "HUSKYLENS.h"
-
-// for servo motor
-#include <Servo.h>
-
+// Libraries 
+    // for DISPLAY
+        #include <Wire.h>
+        #include <LiquidCrystal_I2C.h>
+    // for GYRO SENSOR
+        #include <Adafruit_MPU6050.h>
+        #include <Adafruit_Sensor.h>
+    // for DFRobot HUSKYLENS
+        #include "HUSKYLENS.h"
+    // for servo motor
+        #include <Servo.h>
 // Define HUSKYLENS, DISPLAY, SENSOR
-HUSKYLENS lns;
-Adafruit_SSD1306 display(128, 64, &Wire);
-Adafruit_MPU6050 mpu;
-Servo sv;
-
-/* array of direction codes of routes between teachers' office and each classrooms */
-const int route[2][4][8] = {
-    {   // departure from teachers' office
-        {0,1,0,2,2,3,3,3},  // from office to class  8
-        {0,1,0,0,2,2,3,3},  // from office to class  9
-        {0,1,0,0,0,2,2,3},  // from office to class 10
-        {0,1,0,0,0,0,2,2}   // from office to class 11
-    },   
-    {   // departure from classrooms
-        {0,2,0,1,1,3,3,3},  // from class 8  to office
-        {0,0,2,0,1,1,3,3},  // from class 9  to office
-        {0,0,0,2,0,1,1,3},  // from class 10 to office
-        {0,0,0,0,2,0,1,1}   // from class 11 to office
-    }    
-};
-
-/* array of pin numbers of motors */
-const int motor[2][2][3] = {   // {IN1, IN2, PWM}
-    { {6 , 7 , 2 }, /* front left */ {10, 11, 4 } /* front right */ },  
-    { {8 , 9 , 3 }, /* back  lect */ {12, 13, 5 } /* back  right */ }   
-};
-
-const int sensor[3] = {22/*echo*/, 23/*trig*/, 44/*servo*/}; // sensor pin array
-const float threshold = 30.0; //threshold of distance: in function ( bool near() )
-bool servoMoved = false; // for function ( void sensorServo() )
-
-const int controller[3] = {A0/*right-left*/, A1/*up-down*/, 14/*button*/}; // joystick pin arrray
-bool moved[2] = {false, false}; // represents whether joystick is moved in function ( void select() ), ( void departure() )
-int finish = 0;
-
-int selected[2] = {0,0}; // selected index of const int route[2][4][6]
-
-float angle = 0.0, angleOffset = 0.0; // measured with gyro seneor in function ( void gyro() )
-unsigned long time[4] = {0,0,0,0}; // for integration while measuring ( float angle ) in function ( void gyro() )
+    HUSKYLENS lns;
+    LiquidCrystal_I2C display(0x27, 16, 2);
+    Adafruit_MPU6050 mpu;
+    Servo sv;
+// constants
+    // array of direction codes of routes between teachers' office and each classrooms
+        const int route[2][4][8] = {
+            {   // departure from teachers' office
+                {0,1,0,2,2,3,3,3},  // from office to class  8
+                {0,1,0,0,2,2,3,3},  // from office to class  9
+                {0,1,0,0,0,2,2,3},  // from office to class 10
+                {0,1,0,0,0,0,2,2}   // from office to class 11
+            },   
+            {   // departure from classrooms
+                {0,2,0,1,1,3,3,3},  // from class 8  to office
+                {0,0,2,0,1,1,3,3},  // from class 9  to office
+                {0,0,0,2,0,1,1,3},  // from class 10 to office
+                {0,0,0,0,2,0,1,1}   // from class 11 to office
+            }    
+        };
+    // array of pin numbers of motors
+        const int motor[2][2][3] = {   // {IN1, IN2, PWM}
+            { {6 , 7 , 2 }, /* front left */ {10, 11, 4 } /* front right */ },  
+            { {8 , 9 , 3 }, /* back  lect */ {12, 13, 5 } /* back  right */ }   
+        };
+    const int sensor[3] = {22/*echo*/, 23/*trig*/, 44/*servo*/}; // sensor pin array
+    const float threshold = 30.0; //threshold of distance: in function ( bool near() )
+    const int controller[3] = {A0/*right-left*/, A1/*up-down*/, 14/*button*/}; // joystick pin arrray
 
 
+// variables
+    bool servoMoved = false; // for function ( void sensorServo() )
+    bool moved[2] = {false, false}; // represents whether joystick is moved in function ( void select() ), ( void departure() )
+    int finish = 0;
+    int selected[2] = {0,0}; // selected index of const int route[2][4][6]
+    float angle = 0.0, angleOffset = 0.0; // measured with gyro seneor in function ( void gyro() )
+    unsigned long time[4] = {0,0,0,0}; // for integration while measuring ( float angle ) in function ( void gyro() )
 /*[FORM OF DESCRIPTION OF FUNCTIONS]*/
-
     /* 
     description: 
 
@@ -70,10 +61,6 @@ unsigned long time[4] = {0,0,0,0}; // for integration while measuring ( float an
 
         used in:
     */
-
-
-
-
 void direction(int dir) {
     /*
     control direction of the mobile
@@ -372,15 +359,14 @@ void menu(){
 
         used in: void select()
     */
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(10, 24);
-    if(selected[0] == 0){ display.print("Arrival:        "); }
-    else if(selected[0] == 1){ display.print("Departure from: "); }
-    display.print("Class ");
-    display.println(8+selected[1]);
-    display.display();
+    //                                                          |   [Departure]  |
+    //                                                          |    Class 00    |
+    display.setCursor(3,0);
+    if(selected[0] == 0)     { display.print("[ Arrival ]"); }
+    else if(selected[0] == 1){ display.print("[Departure]"); }
+    display.setCursor(10,1);
+    display.print(8+selected[1]);
+    display.print("  ")
 }
 void select(){
     /* 
@@ -407,7 +393,10 @@ void select(){
 void setup(){
     // begin connections
     Wire.begin();
-    display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+    display.init();
+    display.backlight();
+    display.setCursor(4,1);
+    display.print("Class ");
     mpu.begin();
     Serial2.begin(38400);
     while(!lns.begin(Serial2)){delay(100);};
