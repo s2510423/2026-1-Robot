@@ -20,16 +20,72 @@
 class Motor{
     private: 
         uint8_t in1Pin, in2Pin, pwmPin;
-        uint8_t leftOut, rightOut;
+        uint8_t output;
     public:
         Motor(uint8_t in1, uint8_t in2, uint8_t pwm)
-        : in1Pin(in1), in2Pin(in2), pwmPin(pwm), leftOut(255), rightOut(255) {}
-        
-
+        : in1Pin(in1), in2Pin(in2), pwmPin(pwm), output(255) {
+            pinMode(in1, OUTPUT);
+            pinMode(in2, OUTPUT);
+            pinMode(pwm, OUTPUT);
+        }
+        void direction(uint8_t dir) { // 0: stop // 1: forward // 2: backward //
+            static const uint8_t digit[3][2] = { {HIGH,HIGH}, {LOW,HIGH}, {HIGH,LOW} }; 
+            digitalWrite(in1Pin, digit[dir][0]);
+            digitalWrite(in2Pin, digit[dir][1]);
+        }
+        void on() { analogWrite(pwmPin, output); }
+        void on(uint8_t out) { 
+            output = out;
+            on();
+        }
+        void mod(int16_t deltaOut) { 
+            int16_t nextOut = (int16_t)output + deltaOut;
+            output = constrain(nextOut, 0, 255);
+            on();
+        }
+        void off() { analogWrite(pwmPin, 0); }
 };
-Motor motor[2][2] = {
-    {Motor(6, 7, 2), Motor(10,11,4)},
-    {Motor(8, 9, 3), Motor(12,13,5)}
+struct Motors{ Motor Front, Back; };
+class Mobile{
+    private:
+        Motors left, right;
+    public:
+        Mobile(Motors leftMotors, Motors rightMotors)
+        : left(leftMotors), right(rightMotors) {}
+        void on(uint8_t l=255, uint8_t r=255) {
+            left.Front.on(l);
+            left.Back.on(l);
+            right.Front.on(r);
+            right.Back.on(r);
+        }
+        void mod(int16_t deltaL, int16_t deltaR){
+            left.Front.mod(deltaL);
+            left.Back.mod(deltaL);
+            right.Front.mod(deltaR);
+            right.Back.mod(deltaR);
+        }
+        void off(){
+            left.Front.off();
+            left.Back.off();
+            right.Front.off();
+            right.Back.off();
+        }
+};
+class SensorServo{
+    private:
+        uint8_t pin;
+        unsigned long time;
+        unsigned long seroDelay;
+        uint8_t angle;
+        int8_t deltaAngle;
+    public:
+        SensorServo(uint8_t p)
+        : pin(p), time(0), servoDelay(1500), angle(90), deltaAngle(2)
+        { pinMode(pin,OUTPUT); }
+}
+class Sensor{
+    private:
+        uint8_t trig
 };
 
 // constants
@@ -180,7 +236,7 @@ void sensorServo(){
         servoAngle[0] += servoAngle[1];
         sv.write(servoAngle[0]);
         time[5] = time[0];
-//        Serial.println(servoAngle[0]);
+    //    Serial.println(servoAngle[0]);
     }
 }
 bool arrived() {
