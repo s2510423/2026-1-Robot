@@ -35,18 +35,18 @@
             { {6 , 7 , 2 }, /* front left */ {10, 11, 4 } /* front right */ },  
             { {8 , 9 , 3 }, /* back  lect */ {12, 13, 5 } /* back  right */ }   
         };
-    const int sensor[3] = {22/*echo*/, 23/*trig*/, 44/*servo*/}; // sensor pin array
-    const float threshold = 30.0; //threshold of distance: in function ( bool near() )
-    const int controller[3] = {A0/*right-left*/, A1/*up-down*/, 14/*button*/}; // joystick pin arrray
+    const int sensor[3] = {23/*echo*/, 22/*trig*/, 44/*servo*/}; // sensor pin array
+    const float threshold = 60.0; //threshold of distance: in function ( bool near() )
+    const int controller[3] = {A1/*right-left*/, A0/*up-down*/, 14/*button*/}; // joystick pin arrray
 
 
 // variables
-    bool servoMoved = false; // for function ( void sensorServo() )
+    int servoAngle[2] = {60,-2}; // for function ( void sensorServo() )
     bool moved[2] = {false, false}; // represents whether joystick is moved in function ( void select() ), ( void departure() )
     int finish = 0;
     int selected[2] = {0,0}; // selected index of const int route[2][4][6]
     float angle = 0.0, angleOffset = 0.0; // measured with gyro seneor in function ( void gyro() )
-    unsigned long time[4] = {0,0,0,0}; // for integration while measuring ( float angle ) in function ( void gyro() )
+    unsigned long time[7] = {0,0,0,0,0,0,0}; // for integration while measuring ( float angle ) in function ( void gyro() )
 /*[FORM OF DESCRIPTION OF FUNCTIONS]*/
     /* 
     description: 
@@ -123,15 +123,21 @@ bool near() {
         used in:
             void dirve(int dir)
     */
-    digitalWrite(sensor[1],LOW );
-    delayMicroseconds(2);
-    digitalWrite(sensor[1],HIGH);
-    delayMicroseconds(10);
-    digitalWrite(sensor[1],LOW );
-    float distance = pulseIn(sensor[0],1,20000) * 0.0343 / 2.0;
-    if(distance == 0){ return false; }
-    return (distance < threshold);
-    
+    time[0] = micros();
+    unsigned long measurementDelay = 0;
+    if (time[0] - time[6] > measurementDelay){
+        digitalWrite(sensor[1],LOW );
+        delayMicroseconds(2);
+        digitalWrite(sensor[1],HIGH);
+        delayMicroseconds(10);
+        digitalWrite(sensor[1],LOW );
+        float distance = pulseIn(sensor[0],1,20000) * 0.0343 / 2;
+        Serial.println(distance);
+        time[6] = micros();
+        if(distance == 0){ return false; }
+        return (distance < threshold);
+    }
+    else{return false;}
 }
 void sensorServo(){
     /* 
@@ -148,18 +154,14 @@ void sensorServo(){
                 bool servoMoved
         used in: void drive(int dir)
     */
-    unsigned long servoDelay = 500000;
+    unsigned long servoDelay = 1500;
     time[0] = micros();
-    if ( time[0] - time[1] >= servoDelay ){
-        if (  servoMoved ){ 
-            servoMoved = false; 
-            sv.write(0);
-        }
-        else { 
-            servoMoved = true ;
-            sv.write(180);
-        }
-        time[1] = time[0];
+    if ( time[0] - time[5] >= servoDelay ){
+        if (servoAngle[0] <=10 || servoAngle[0] >= 170){ servoAngle[1]*=-1;}
+        servoAngle[0] += servoAngle[1];
+        sv.write(servoAngle[0]);
+        time[5] = time[0];
+//        Serial.println(servoAngle[0]);
     }
 }
 bool arrived() {
@@ -179,12 +181,8 @@ bool arrived() {
         used in: void drive(int dir)
     */
 
-    time[0] = micros()
     HUSKYLENSResult result = lns.read(); 
-    if( result.ID == 1 && (result.xCenter < 300 || result.xCenter > 60) && (result.yCenter < 200 || result.yCenter > 40)){ 
-        time[1] = time[0];
-        return true; 
-    }
+    if( result.ID == 1 && (result.xCenter < 300 || result.xCenter > 60) && (result.yCenter < 200 || result.yCenter > 40)){ return true; }
     else{ return false; }
 }
 void gyro(){
@@ -209,11 +207,12 @@ void gyro(){
     mpu.getEvent(&a, &g, &temp);
     float deltAngle =  g.gyro.z;
     time[0] = micros();
-    float dt = (time[0] - time[1] ) / 1000000.0;
+    float dt = (time[0] - time[1] ) / 100000.0;
     time[1] = time[0];
     angle += (deltAngle - angleOffset) * (180.0 / PI) * dt;
+    //Serial.println(angle);
 }
-void straight(){
+void straight(int right, int left){
     float dead = 3.0;
     gyro();
     sensorServo();
@@ -272,23 +271,28 @@ void drive(int dir) {
     direction(dir);
     motorOn(left, right);
     // rotation
-    if     ( 1 >= dir && dir <= 2) {  for(;abs(angle)<90;gyro()){ direction(dir); }  }
+    if     ( 1 <= dir && dir <= 2) {  
+        Serial.println("rotation...");
+        for(;abs(angle)<90;gyro()){ direction(dir); }  
+        }
     //straight
     else if( dir == 0){
+        Serial.println("Going straight...");
         for(;arrived() && finish == 1;){
-
+            straight(left,right);
         }
+        finish = 0;
         for(;finish != 1;){
-                straight(dir);
-                arrived();
-            }
-        
+            straight(left,right);
+            if(arrived()){break;}
+        }
         finish = 1;
     }
     angle = 0.0;
     direction(3);
     delay(100);
     motorOn(0,0);
+    Serial.println("Continue...");
 }
 void control(){
     /* 
@@ -307,18 +311,23 @@ void control(){
 
         used in: void select()
     */
+    time[0] = micros();
     int value = analogRead(controller[1]);
-    if(value < 300 && !moved[1]) {
+    if(value < 100 && !moved[1]) {
         selected[1]--;
         if(selected[1] < 0){ selected[1] = 3; }
         moved[1] = true;
+        moved[0] = true;
+        time[4] = micros();
     } 
-    else if(value > 700 && !moved[1]) {
+    else if(value > 900 && !moved[1]) {
         selected[1]++;
-        if(selected[1] > 2){ selected[1] = 0; }
+        if(selected[1] > 3){ selected[1] = 0; }
         moved[1] = true;
+        moved[0] = true;
+        time[4] = micros();
     } 
-    else if(value >= 300 && value <= 700) { moved[1] = false; }
+    else if(value >= 100 && value <= 900 && time[0] - time[4] >= 300000) { moved[1] = false; }
 }
 void departure(){
     /* 
@@ -337,13 +346,16 @@ void departure(){
                 
         used in: void select()
     */
+    time[0] = micros();
     int value = analogRead(controller[0]);
-    if((value < 300 || value > 700) && !moved[0]) {
+    if((value < 100 || value > 900) && !moved[0]) {
         if(selected[0] == 0){ selected[0] = 1; }
         else if(selected[0] == 1){ selected[0] = 0; }
         moved[0] = true;
+        moved[1] = true;
+        time[4] = micros();
     }
-    else if(value >= 300 && value <= 700) { moved[1] = false; }
+    else if(value >= 100 && value <= 900 && time[0] - time[4] >= 300000) { moved[0] = false; }
 }   
 void menu(){
     /* 
@@ -361,12 +373,13 @@ void menu(){
     */
     //                                                          |   [Departure]  |
     //                                                          |    Class 00    |
-    display.setCursor(3,0);
-    if(selected[0] == 0)     { display.print("[ Arrival ]"); }
-    else if(selected[0] == 1){ display.print("[Departure]"); }
-    display.setCursor(10,1);
+    display.setCursor(4,0);
+    if(selected[0] == 0)     { display.print(" Arrival "); }
+    else if(selected[0] == 1){ display.print("Departure"); }
+    display.setCursor(11,1);
+    if (selected[1] <= 1) { display.print("0");}
     display.print(8+selected[1]);
-    display.print("  ")
+    display.print("  ");
 }
 void select(){
     /* 
@@ -385,6 +398,8 @@ void select(){
         departure();
         menu();      
         if(digitalRead(controller[2]) == LOW) {
+            display.setCursor(4,0);
+            display.print("Selected ");
             delay(200); 
             break;
         }
@@ -392,14 +407,18 @@ void select(){
 }
 void setup(){
     // begin connections
+    Serial.begin(9600);
+    Serial2.begin(9600);
+    
+    while(!lns.begin(Serial2)){delay(100);};
     Wire.begin();
     display.init();
     display.backlight();
     display.setCursor(4,1);
     display.print("Class ");
+    display.setCursor(3,0);
+    display.print("[         ]");
     mpu.begin();
-    Serial2.begin(38400);
-    while(!lns.begin(Serial2)){delay(100);};
 
 
     // range of gyro sensor measurment
@@ -424,10 +443,12 @@ void setup(){
     for( int i=0; i<2; i++){
         pinMode(sensor[i],io[i]);
         for( int j=0; j<2; j++){ for (int k=0; k<3; k++){ pinMode(motor[i][j][k], OUTPUT);}}
+        }
+    
     }
-}
-void loop(){
+void loop(){     
     // selection -> route based driving loop
     select();
-    for( int i=0; i<8; i++){ drive(route[selected[0]][selected[1]][i]); }
+    drive(0);
+    //for( int i=0; i<8; i++){ drive(route[selected[0]][selected[1]][i]); }
 }
