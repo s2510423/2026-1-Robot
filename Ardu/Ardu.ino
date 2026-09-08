@@ -14,6 +14,24 @@
     LiquidCrystal_I2C display(0x27, 16, 2);
     Adafruit_MPU6050 mpu;
     Servo sv;
+
+// classes
+
+class Motor{
+    private: 
+        uint8_t in1Pin, in2Pin, pwmPin;
+        uint8_t leftOut, rightOut;
+    public:
+        Motor(uint8_t in1, uint8_t in2, uint8_t pwm)
+        : in1Pin(in1), in2Pin(in2), pwmPin(pwm), leftOut(255), rightOut(255) {}
+        
+
+};
+Motor motor[2][2] = {
+    {Motor(6, 7, 2), Motor(10,11,4)},
+    {Motor(8, 9, 3), Motor(12,13,5)}
+};
+
 // constants
     // array of direction codes of routes between teachers' office and each classrooms
         const int route[2][4][8] = {
@@ -35,6 +53,7 @@
             { {6 , 7 , 2 }, /* front left */ {10, 11, 4 } /* front right */ },  
             { {8 , 9 , 3 }, /* back  lect */ {12, 13, 5 } /* back  right */ }   
         };
+    
     const int sensor[3] = {23/*echo*/, 22/*trig*/, 44/*servo*/}; // sensor pin array
     const float threshold = 60.0; //threshold of distance: in function ( bool near() )
     const int controller[3] = {A1/*right-left*/, A0/*up-down*/, 14/*button*/}; // joystick pin arrray
