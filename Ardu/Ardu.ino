@@ -126,7 +126,38 @@ class Sensor{
             return (distance < threshold);
         }
 };
-class Gyro{};
+class Gyro{
+    private: 
+        sensors_event_t a,g,temp;
+        unsigned long time;
+        float angle, angleOffset;
+        Adafruit_MPU6050 mpu;
+    public:
+        Gyro()
+        : angle(0) {
+            mpu.begin();
+            mpu.setAccelerometerRange(MPU6050_RANGE_8_G); // accelerometer ±8g
+            mpu.setGyroRange(MPU6050_RANGE_500_DEG);      // gyro ±500 deg/s
+            mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);   // noise filter
+            for (int i = 0; i < 500; i++) {
+                mpu.getEvent(&a, &g, &temp);
+                angleOffset += g.gyro.z;
+                delay(2);
+            }
+            angleOffset *= 0.002;
+            time = micros();
+        }
+        void measure() {
+            mpu.getEvent(&a, &g, &temp);
+            float deltaAngle =  g.gyro.z;
+            unsigned long currentTime = micros();
+            float dt = (currentTime - time ) / 100000.0;
+            time = currentTime;
+            angle += (deltaAngle - angleOffset) * (180.0 / PI) * dt;
+            angle = constrain(angle, 0.0, 180.0);
+        }
+        void setAngle(float newAngle){ angle = constrain(newAngle, 0.0, 180.0); }
+};
 class Display{};
 class Joystick{};
 class Interface{};
