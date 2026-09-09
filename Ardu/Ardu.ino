@@ -158,7 +158,36 @@ class Gyro{
         }
         void setAngle(float newAngle){ angle = constrain(newAngle, 0.0, 180.0); }
 };
-class Display{};
+class Display{
+    private:
+        LiquidCrystal_I2C display;
+        uint8_t classNumber;
+        bool departure;
+    public:
+        Display()
+        : display(0x27, 16, 2) {
+            Wire.begin();
+            display.init();
+            display.backlight();
+            display.setCursor(4,1);
+            display.print("Class ");
+            display.setCursor(3,0);
+            display.print("[         ]");
+        }
+        void menu() {
+            display.setCursor(4,0);
+            if(!departure)     { display.print(" Arrival "); }
+            else if(departure) { display.print("Departure"); }
+            display.setCursor(11,1);
+            if (classNumber < 10) { display.print("0");}
+            display.print(classNumber);
+            display.print("  ");
+        }
+        void setStatus(uint8_t num, bool dep) {
+            classNumber = constrain(num,8,11);
+            departure = dep;
+        }
+};
 class Joystick{};
 class Interface{};
 class Husky{};
