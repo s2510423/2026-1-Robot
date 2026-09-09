@@ -73,12 +73,12 @@ class Mobile{
 };
 class SensorServo{
     private:
+        Servo sv;
         uint8_t pin;
         unsigned long time;
         unsigned long seroDelay;
         uint8_t angle, min, max;
         int8_t deltaAngle;
-        Servo sv;
     public:
         SensorServo(uint8_t p)
         : pin(p), time(0), servoDelay(1500), angle(90), min(10), max(170), deltaAngle(2)
@@ -134,7 +134,7 @@ class Gyro{
         Adafruit_MPU6050 mpu;
     public:
         Gyro()
-        : angle(0) {
+        : angle(0), angleOffset(0) {
             mpu.begin();
             mpu.setAccelerometerRange(MPU6050_RANGE_8_G); // accelerometer ±8g
             mpu.setGyroRange(MPU6050_RANGE_500_DEG);      // gyro ±500 deg/s
@@ -151,7 +151,7 @@ class Gyro{
             mpu.getEvent(&a, &g, &temp);
             float deltaAngle =  g.gyro.z;
             unsigned long currentTime = micros();
-            float dt = (currentTime - time ) / 100000.0;
+            float dt = (currentTime - time ) / 1000000.0;
             time = currentTime;
             angle += (deltaAngle - angleOffset) * (180.0 / PI) * dt;
             angle = constrain(angle, 0.0, 180.0);
@@ -165,7 +165,7 @@ class Display{
         bool departure;
     public:
         Display()
-        : display(0x27, 16, 2) {
+        : display(0x27, 16, 2), classNumber(8), departure(true) {
             Wire.begin();
             display.init();
             display.backlight();
@@ -187,12 +187,99 @@ class Display{
             classNumber = constrain(num,8,11);
             departure = dep;
         }
+        void init() {
+            display.init();
+            display.backlight();
+            display.setCursor(4,1);
+            display.print("Class ");
+            display.setCursor(3,0);
+            display.print("[         ]");
+        }
 };
-class Joystick{};
-class Interface{};
-class Husky{};
+-
+class Joystick{
+    private:
+        uint8_t xPin, yPin, buttonPin;
+        uint8_t classNumber;
+        bool departure;
+        unsigned long time;
+        bool xMoved, yMoved;
+        uint16_t xValue, yValue;
+    public:
+        Joystick(uint8_t x, uint8_t y, uint8_t button)
+        : xPin(x), yPin(y), buttonPin(button) {
+            pinMode(xPin,INPUT);
+            pinMode(yPin,INPUT);
+            pintMOde(buttonPin,INPUT_PULLUP);
+        }
+        void y(){
+            unsigned long currentTime = micros();
+            yValue = analogRead(yPin);
+            if(yValue < 100 && !yMoved) {
+                classNumber--;
+                if(classNumber < 0){ classNumber = 3; }
+                ymoved = true;
+                time = currentTime;
+            } 
+            else if(yValue > 900 && !yMoved) {
+                classNumber++;
+                if(classNumber > 3){ classNumber = 0; }
+                ymoved = true;
+                time = currentTime;
+            } 
+            else if (
+                yValue >= 100 && yValue <= 900 && yMoved
+                && currentTime - time >= 300000
+            ) { yMoved = false; }
+        }
+        void x(){
+            unsigned long currentTime = micros();
+            xValue = analogRead(xPin);
+            if((xValue < 100 || xValue > 900) && !xMoved) {
+                departure = !departure;
+                xMoved = true;
+                time = currentTime;
+            }
+            else if (
+                xValue >= 100 && xValue <= 900 && !xMoved
+                && currentTime - time >= 300000
+            ) { xMoved = false; }
+        }
 
-class Cart{};
+};
+class Interface{
+    private:
+        Display& display;
+        Joystick& joystick;
+        uint8_t classNumber;
+        bool departure;
+    public:
+        Interface(Display& dis,Joystick& joy)
+        : display(dis), joystick(joy), classNumber(joy.classNumber), departure(joy.departure) {}
+        void select(){
+            for(;;){
+                joystick.x();
+                joystick.y();
+                display.menu();      
+                if(digitalRead(joystick.buttonPin) == LOW) {
+                    display.display.setCursor(4,0);
+                    display.display.print("Selected ");
+                    delay(200); 
+                    break;
+                }
+            }
+        }
+        void init(){ display.init(); }
+};
+class Husky{
+    private:
+    public:
+};
+
+class Cart{
+    private:
+    public:
+};
 
 // constants
     // array of direction codes of routes between teachers' office and each classrooms
