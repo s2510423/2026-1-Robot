@@ -76,17 +76,63 @@ class SensorServo{
         uint8_t pin;
         unsigned long time;
         unsigned long seroDelay;
-        uint8_t angle;
+        uint8_t angle, min, max;
         int8_t deltaAngle;
+        Servo sv;
     public:
         SensorServo(uint8_t p)
-        : pin(p), time(0), servoDelay(1500), angle(90), deltaAngle(2)
-        { pinMode(pin,OUTPUT); }
-}
+        : pin(p), time(0), servoDelay(1500), angle(90), min(10), max(170), deltaAngle(2)
+        { sv.attach(pin); }
+        void run(bool on){
+            if(on){
+                unsigned long currentTime = micros();
+                if ( currentTime - time >= servoDelay ){
+                    if (angle <=min || angle >= max){ deltaAngle*=-1;}
+                    angle += deltaAngle;
+                    angle = constrain(angle, min, max);
+                    sv.write(angle);
+                    time = currentTime;
+                }
+            }  
+        }
+        void setAngle(uint8_t a) {
+            angle = constrain(a, 0, 180);
+            sv.write(angle);
+        }
+        void setMinMax(uint8_t Min, uint8_t Max) {
+            min = constrain(Min, 0, 180);
+            max = constrain(Max, 0, 180);
+        }
+};
+
 class Sensor{
     private:
-        uint8_t trig
+        uint8_t trig, echo;
+        float distance, threshold;
+    public:
+        Sensor(uint8_t t, uint8_t e)
+        : trig(t), echo(e), threshold(30) {
+            pinMode(trig, OUTPUT);
+            pinMode(echo,  INPUT);
+        }
+        bool near(){
+            digitalWrite(trig,LOW );
+            delayMicroseconds(2);
+            digitalWrite(trig,HIGH);
+            delayMicroseconds(10);
+            digitalWrite(trig,LOW );
+            distance = pulseIn(echo,1,20000) * 0.0343 / 2;
+            if(distance == 0){ return false; }
+            return (distance < threshold);
+        }
 };
+class Gyro{};
+class Display{};
+class Joystick{};
+class Interface{};
+class Husky{};
+
+class Cart{};
 
 // constants
     // array of direction codes of routes between teachers' office and each classrooms
