@@ -126,6 +126,21 @@ class Sensor{
             return (distance < threshold);
         }
 };
+class Radar{
+    private:
+        Sensor& sensor;
+        SensorServo& sensorServo;
+    public:
+        Radar(Sensor& snsr, SensorServo& snsrvo)
+        : sensor(snsr), sensorServo(snsrvo) {}
+        bool near(){
+            sensorServo.run(!sensor.near());
+            if (sensor.near()){ 
+                sensorServo.setAngle;
+                return near();
+            }
+        }
+};
 class Gyro{
     private: 
         sensors_event_t a,g,temp;
@@ -289,6 +304,7 @@ class Husky{
 
 class Cart{
     private:
+
     public:
 };
 
