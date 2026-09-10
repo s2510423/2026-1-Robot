@@ -195,6 +195,10 @@ class Display{
             display.setCursor(3,0);
             display.print("[         ]");
         }
+        void selected() {
+            display.setCursor(4,0);
+            display.print("Selected ");        
+        }
 };
 -
 class Joystick{
@@ -262,8 +266,7 @@ class Interface{
                 joystick.y();
                 display.menu();      
                 if(digitalRead(joystick.buttonPin) == LOW) {
-                    display.display.setCursor(4,0);
-                    display.display.print("Selected ");
+                    display.selected();
                     delay(200); 
                     break;
                 }
@@ -273,7 +276,15 @@ class Interface{
 };
 class Husky{
     private:
+        HUSKYLENS lns;
+        HUSKYLENSResult result
     public:
+        Husky(): { while(!lns.begin(Serial2)) { delay(100); } }
+        bool arrived() {
+            result = lns.read();
+            if( result.ID == 1 && (result.xCenter < 300 || result.xCenter > 60) && (result.yCenter < 200 || result.yCenter > 40)){ return true; }
+            else{ return false; }
+        }
 };
 
 class Cart{
@@ -329,6 +340,7 @@ class Cart{
 
         used in:
     */
+
 void direction(int dir) {
     /*
     control direction of the mobile
