@@ -14,7 +14,7 @@ void Mobile::on() {
     right.Front.on();
     right.Back.on();
 }
-void Mobile::set(uint8_t l=255, uint8_t r=255) {
+void Mobile::set(uint8_t l, uint8_t r) {
     left.Front.set(l);
     left.Back.set(l);
     right.Front.set(r);

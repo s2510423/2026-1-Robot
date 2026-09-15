@@ -6,6 +6,8 @@ void Cart::begin(){
     mobile.begin();
     radar.begin();
     gyro.begin();
+    husky.begin();
+    interface.begin();
 }
 void Cart::straight(){
     float dead = 3.0;
@@ -30,7 +32,7 @@ void Cart::straight(){
 void Cart::turn(bool right){
     mobile.direction((uint8_t)right + 1);
     gyro.setAngle(0.0);
-    uint8_t pm = (uint8_t)right * 2 - 1 ;
+    int8_t pm = (uint8_t)right * 2 - 1 ;
     while ( (gyro.measure() < pm * 90.0) ^ !right) {
         if (radar.near()) { mobile.off(); }
         else { mobile.on(); }
