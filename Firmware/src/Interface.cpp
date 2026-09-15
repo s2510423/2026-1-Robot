@@ -8,8 +8,7 @@ void Interface::begin(){
 }
 void Interface::select(){
     for(;;){
-        joystick.x();
-        joystick.y();
+        display.setStatus(joystick.y(), joystick.x());
         display.menu();      
         if( joystick.pressed() ) {
             display.selected();
@@ -18,6 +17,6 @@ void Interface::select(){
         }
     }
 }
-uint8_t Interface::getClassNumber(){ return joystick.classNumber; }
-uint8_t Interface::getDeparture(){ return joystick.departure; }
+uint8_t Interface::getClassNumber(){ return joystick.y(); }
+uint8_t Interface::getDeparture(){ return joystick.x(); }
 void Interface::init(){ display.init(); }

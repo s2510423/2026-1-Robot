@@ -1,7 +1,7 @@
 #include "Display.h"
 
 Display::Display()
-: display(0x27, 16, 2), classNumber(8), departure(true) {}
+: display(0x27, 16, 2), classNumber(0), departure(true) {}
 void Display::begin(){
     Wire.begin();
     display.init();
@@ -16,12 +16,12 @@ void Display::menu() {
     if(!departure)     { display.print(" Arrival "); }
     else if(departure) { display.print("Departure"); }
     display.setCursor(11,1);
-    if (classNumber < 3) { display.print("0");}
+    if (classNumber < 2) { display.print("0");}
     display.print(classNumber+8);
     display.print("  ");
 }
 void Display::setStatus(uint8_t num, bool dep) {
-    classNumber = constrain(num,8,11);
+    classNumber = constrain(num,0,3);
     departure = dep;
 }
 void Display::init() {
