@@ -7,5 +7,5 @@ class Husky{
         HUSKYLENSResult result;
     public:
         void begin();
-        bool arrived();
+        bool arrived(uint8_t tagNum);
 };

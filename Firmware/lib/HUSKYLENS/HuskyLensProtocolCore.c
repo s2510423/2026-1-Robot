@@ -93,7 +93,7 @@ int16_t husky_lens_protocol_read_int16(){
     if (content_current >= content_end || content_read_end){receive_fail = true; return 0;}
     int16_t result;
     memcpy(&result, receive_buffer + content_current, sizeof(result));
-    if (IS_BIG_ENDIAN()){__builtin_bswap16(result);}
+    if (IS_BIG_ENDIAN()){result = __builtin_bswap16(result);}
     content_current += sizeof(result);
     return result;
 }
@@ -102,7 +102,7 @@ int32_t husky_lens_protocol_read_int32(){
     if (content_current >= content_end || content_read_end){receive_fail = true; return 0;}
     int32_t result;
     memcpy(&result, receive_buffer + content_current, sizeof(result));
-    if (IS_BIG_ENDIAN()){__builtin_bswap32(result);}
+    if (IS_BIG_ENDIAN()){result = __builtin_bswap32(result);}
     content_current += sizeof(result);
     return result;
 }
@@ -111,7 +111,7 @@ float husky_lens_protocol_read_float(){
     if (content_current >= content_end || content_read_end){receive_fail = true; return 0;}
     float result;
     memcpy(&result, receive_buffer + content_current, sizeof(result));
-    if (IS_BIG_ENDIAN()){__builtin_bswap32(result);}
+    if (IS_BIG_ENDIAN()){result = __builtin_bswap32(result);}
     content_current += sizeof(result);
     return result;
 }
@@ -143,21 +143,21 @@ void husky_lens_protocol_write_uint8(uint8_t content){
 
 void husky_lens_protocol_write_int16(int16_t content){
     if(send_index + sizeof(content) >= FRAME_BUFFER_SIZE) {send_fail = true; return;}
-    if (IS_BIG_ENDIAN()){__builtin_bswap16(content);}
+    if (IS_BIG_ENDIAN()){int16_t result = __builtin_bswap16(content);}
     memcpy(send_buffer + send_index, &content, sizeof(content));
     send_index += sizeof(content);
 }
 
 void husky_lens_protocol_write_int32(int32_t content){
     if(send_index + sizeof(content) >= FRAME_BUFFER_SIZE) {send_fail = true; return;}
-    if (IS_BIG_ENDIAN()){__builtin_bswap32(content);}
+    if (IS_BIG_ENDIAN()){int32_t result = __builtin_bswap32(content);}
     memcpy(send_buffer + send_index, &content, sizeof(content));
     send_index += sizeof(content);
 }
 
 void husky_lens_protocol_write_float(float content){
     if(send_index + sizeof(content) >= FRAME_BUFFER_SIZE) {send_fail = true; return;}
-    if (IS_BIG_ENDIAN()){__builtin_bswap32(content);}
+    if (IS_BIG_ENDIAN()){int32_t result = __builtin_bswap32(content);}
     memcpy(send_buffer + send_index, &content, sizeof(content));
     send_index += sizeof(content);
 }

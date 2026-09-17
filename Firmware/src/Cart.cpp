@@ -9,10 +9,10 @@ void Cart::begin(){
     husky.begin();
     interface.begin();
 }
-void Cart::straight(){
+void Cart::straight(uint8_t num){
     float dead = 3.0;
     mobile.on();
-    while (!husky.arrived()){
+    while (!husky.arrived(num)){
         while( radar.near() ){ delay(100); } 
         float angle = gyro.measure();
         if( angle < -1*dead || angle > dead){
@@ -29,36 +29,27 @@ void Cart::straight(){
         }
     }
 }
-void Cart::turn(bool right){
-    mobile.direction((uint8_t)right + 1);
+void Cart::turn(uint8_t dir){
+    mobile.direction(dir);
     gyro.setAngle(0.0);
-    int8_t pm = (uint8_t)right * 2 - 1 ;
-    while ( (gyro.measure() < pm * 90.0) ^ !right) {
+    int8_t pm = dir * 2 - 3;
+    while ( (gyro.measure() < pm * 90.0) ^ !(bool)(dir-1)) {
         if (radar.near()) { mobile.off(); }
         else { mobile.on(); }
     }
-}
+} 
 void Cart::drive(){
-    static const int route[2][4][8] = {
-        {   // arrival  : classroom
-            {0,1,0,2,2,3,3,3},  // from office to class  8
-            {0,1,0,0,2,2,3,3},  // from office to class  9
-            {0,1,0,0,0,2,2,3},  // from office to class 10
-            {0,1,0,0,0,0,2,2}   // from office to class 11
-        },   
-        {   // departure: classroom
-            {0,2,0,1,1,3,3,3},  // from class 8  to office  
-            {0,0,2,0,1,1,3,3},  // from class 9  to office
-            {0,0,0,2,0,1,1,3},  // from class 10 to office
-            {0,0,0,0,2,0,1,1}   // from class 11 to office
-        } 
+    static const uint8_t stations[6][2] = {
+        {3,0}, {2,1}, {0,0}, {0,0}, {0,0}, {0,3}
     };
     interface.select();
-    for(uint8_t i = 0; i<8;i++){
-        uint8_t j = route[interface.getDeparture()][interface.getClassNumber()][i];
-        if (j==0){ straight(); }
+    uint8_t dep = interface.getstation(0);
+    uint8_t arr = interface.getstation(1);
+    
+    for(uint8_t i = 0; i<(dep-arr);i+=( (uint8_t)(dep>arr)*2  -1)){
+        uint8_t j = stations[dep+i][(uint8_t)(dep>=arr)];
+        if (j==0){ straight(0); }
         else if (j>0 && j<3){ turn((bool)j - 1); }
         else if (j==3){ mobile.off(); }
     }
-
 }

@@ -696,7 +696,7 @@ public:
 
     #define HUSKYLENS_FIRMWARE_VERSION "0.4.1"
     bool checkFirmwareVersion(){
-       writeFirmwareVersion(HUSKYLENS_FIRMWARE_VERSION);
+       return writeFirmwareVersion(HUSKYLENS_FIRMWARE_VERSION);
     }
 
      bool writeFirmwareVersion(String version)
@@ -867,7 +867,6 @@ public:
             protocol.customText.textSize = husky_lens_protocol_read_uint8();
             protocol.customText.x = husky_lens_protocol_read_uint8() + husky_lens_protocol_read_uint8();
             protocol.customText.y = husky_lens_protocol_read_uint8();
-            char buf[protocol.customText.textSize];
             for (int i = 0; i < protocol.customText.textSize; i++)
             {
                 if (i > 20)
