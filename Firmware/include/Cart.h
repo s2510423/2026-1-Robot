@@ -15,7 +15,6 @@ class Cart{
         Interface& interface;
     public:
         Cart(Mobile& m, Radar& r, Gyro& g, Husky& h, Interface& i);
-        void begin();
         void straight(uint8_t num); 
         void turn(uint8_t dir);
         void drive();

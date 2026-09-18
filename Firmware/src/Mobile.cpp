@@ -32,6 +32,12 @@ void Mobile::off(){
     right.Front.off();
     right.Back.off();
 }
+void Mobile::end(){
+    left.Front.end();
+    left.Back.end();
+    right.Front.end();
+    right.Back.end();
+}
 void Mobile::direction(uint8_t dir) { // 0: forward // 1: left // 2: right // 3: stop
     static const uint8_t dirTable[4][2] = {{1,1},{2,1},{1,2},{0,0}};
     left.Front.direction (dirTable[dir][0]);

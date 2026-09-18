@@ -13,6 +13,7 @@ class Mobile{
         void set(uint8_t l=255, uint8_t r=255);
         void mod(int16_t deltaL, int16_t deltaR);
         void off();
+        void end();
         void direction(uint8_t dir);
         uint8_t getLeft();
         uint8_t getRight();        

@@ -1,6 +1,7 @@
 #pragma once
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
+#include <Wire.h>
 
 class Display{
     private:
@@ -9,10 +10,10 @@ class Display{
         uint8_t arrival;
     public:
         Display();
+        void printCode(uint8_t code);
         void begin();
         void menu();
         void setStatus(uint8_t dep, uint8_t arr);
-        void init();
         void selected();
 };
 

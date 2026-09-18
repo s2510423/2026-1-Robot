@@ -49,3 +49,8 @@ bool Joystick::pressed(){
     return false;
 }
 uint8_t Joystick::getstation(uint8_t i){ return station[i]; }
+void Joystick::end(){
+    pinMode(xPin,INPUT);
+    pinMode(yPin,INPUT);
+    pinMode(buttonPin,INPUT);
+}

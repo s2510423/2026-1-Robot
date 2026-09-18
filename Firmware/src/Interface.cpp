@@ -19,4 +19,8 @@ void Interface::select(){
     }
 }
 uint8_t Interface::getstation(uint8_t i){ return joystick.getstation(i); }
-void Interface::init(){ display.init(); }
+
+void Interface::off(){
+    joystick.end();
+    Wire.end();
+}

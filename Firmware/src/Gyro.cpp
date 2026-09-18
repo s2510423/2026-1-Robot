@@ -4,6 +4,7 @@
 Gyro::Gyro()
 : angle(0), angleOffset(0) {}
 void Gyro::begin() {
+    Wire.begin();
     mpu.begin();
     mpu.setAccelerometerRange(MPU6050_RANGE_8_G); // accelerometer ±8g
     mpu.setGyroRange(MPU6050_RANGE_500_DEG);      // gyro ±500 deg/s
@@ -27,3 +28,7 @@ float Gyro::measure() {
 }
 void Gyro::setAngle(float newAngle){ angle = newAngle; }
 float Gyro::getAngle(){ return angle; }
+void Gyro::end(){
+    mpu.enableSleep(true);
+    Wire.end();
+}

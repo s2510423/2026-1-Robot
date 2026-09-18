@@ -8,4 +8,5 @@ class Husky{
     public:
         void begin();
         bool arrived(uint8_t tagNum);
+        void end();
 };

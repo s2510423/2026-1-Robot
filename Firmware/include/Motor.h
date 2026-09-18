@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include <Wire.h>
 
 class Motor{
     private: 
@@ -14,6 +15,7 @@ class Motor{
         void mod(int16_t deltaOut);
         uint8_t getOutput();
         void off();
+        void end();
 };
 struct Motors{ 
     Motor& Front; 

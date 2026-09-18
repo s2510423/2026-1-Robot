@@ -11,4 +11,5 @@ class Radar{
         Radar(Sensor& snsr, SensorServo& snsrvo);
         void begin();
         bool near();
+        void end();
 };

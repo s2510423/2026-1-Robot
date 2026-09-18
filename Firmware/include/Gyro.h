@@ -14,4 +14,5 @@ class Gyro{
         float measure();
         void setAngle(float newAngle);
         float getAngle();
+        void end();
 };

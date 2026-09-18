@@ -12,7 +12,10 @@ void Motor::direction(uint8_t dir) { // 0: stop // 1: forward // 2: backward //
     digitalWrite(in1Pin, digit[dir][0]);
     digitalWrite(in2Pin, digit[dir][1]);
 }
-void Motor::on() { analogWrite(pwmPin, output); }
+void Motor::on() { 
+    begin();
+    analogWrite(pwmPin, output); 
+}
 void Motor::set(uint8_t out) { 
     output = out;   
     on();
@@ -24,4 +27,9 @@ void Motor::mod(int16_t deltaOut) {
 }
 uint8_t Motor::getOutput() { return output; }
 void Motor::off() { analogWrite(pwmPin, 0); }
+void Motor::end() { 
+    pinMode(in1Pin, INPUT);
+    pinMode(in2Pin, INPUT);
+    pinMode(pwmPin, INPUT);  
+}
 

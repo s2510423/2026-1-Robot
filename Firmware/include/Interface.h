@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include <Wire.h>
 #include "Joystick.h"
 #include "Display.h"
 
@@ -12,5 +13,5 @@ class Interface{
         void begin();
         void select();
         uint8_t getstation(uint8_t i);
-        void init();
+        void off();
 };

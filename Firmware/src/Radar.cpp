@@ -10,3 +10,7 @@ bool Radar::near(){
     sensorServo.run(!sensor.near());
     return sensor.near();
 }
+void Radar::end(){
+    sensor.end();
+    sensorServo.end();
+}

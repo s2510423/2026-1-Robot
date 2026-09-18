@@ -2,13 +2,6 @@
 
 Cart::Cart(Mobile& m, Radar& r, Gyro& g, Husky& h, Interface& i)
 : mobile(m), radar(r), gyro(g), husky(h), interface(i) {}
-void Cart::begin(){
-    mobile.begin();
-    radar.begin();
-    gyro.begin();
-    husky.begin();
-    interface.begin();
-}
 void Cart::straight(uint8_t num){
     float dead = 3.0;
     mobile.on();
@@ -42,14 +35,23 @@ void Cart::drive(){
     static const uint8_t stations[6][2] = {
         {3,0}, {2,1}, {0,0}, {0,0}, {0,0}, {0,3}
     };
+    interface.begin();
     interface.select();
     uint8_t dep = interface.getstation(0);
     uint8_t arr = interface.getstation(1);
-    
-    for(uint8_t i = 0; i<(dep-arr);i+=( (uint8_t)(dep>arr)*2  -1)){
+    interface.off();
+    mobile.begin();
+    radar.begin();
+    gyro.begin();
+    husky.begin();
+    for(int8_t i = 0; i<(dep-arr);i+=( (uint8_t)(dep>arr)*2  -1)){
         uint8_t j = stations[dep+i][(uint8_t)(dep>=arr)];
         if (j==0){ straight(0); }
         else if (j>0 && j<3){ turn((bool)j - 1); }
         else if (j==3){ mobile.off(); }
     }
+    mobile.end();
+    radar.end();
+    gyro.end();
+    husky.end();
 }

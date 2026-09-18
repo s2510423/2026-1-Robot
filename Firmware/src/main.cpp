@@ -23,10 +23,5 @@ Gyro gyro;
 
 Cart cart(mobile, radar, gyro, husky, interface);
 
-
-void setup(){
-    cart.begin();
-}
-void loop(){
-    cart.drive();
-}
+void setup(){}
+void loop(){ cart.drive(); }

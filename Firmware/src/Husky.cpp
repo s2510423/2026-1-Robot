@@ -9,3 +9,4 @@ bool Husky::arrived(uint8_t tagNum) {
     if( result.ID == tagNum && (result.xCenter < 300 && result.xCenter > 60) && (result.yCenter < 200 && result.yCenter > 40)){ return true; }
     else{ return false; }
 }
+void Husky::end(){ Serial2.end(); }

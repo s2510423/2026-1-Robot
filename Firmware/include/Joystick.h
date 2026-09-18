@@ -16,4 +16,5 @@ class Joystick{
         bool y();
         bool pressed();
         uint8_t getstation(uint8_t i);
+        void end();
 };

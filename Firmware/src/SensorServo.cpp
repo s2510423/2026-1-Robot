@@ -23,3 +23,4 @@ void SensorServo::setMinMax(uint8_t Min, uint8_t Max) {
     minimum = constrain(Min, 0, 180);
     maximum = constrain(Max, 0, 180);
 }
+void SensorServo::end(){ sv.detach(); }

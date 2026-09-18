@@ -16,4 +16,5 @@ class SensorServo{
         void run(bool on);
         void setAngle(uint8_t a);
         void setMinMax(uint8_t Min, uint8_t Max);
+        void end();
 };

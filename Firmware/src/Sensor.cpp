@@ -16,3 +16,7 @@ bool Sensor::near(){
     if(distance == 0){ return false; }
     return (distance < threshold);
 }
+void Sensor::end(){
+    pinMode(trig, INPUT);
+    pinMode(echo, INPUT);
+}

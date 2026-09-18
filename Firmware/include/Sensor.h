@@ -10,4 +10,5 @@ class Sensor{
         Sensor(uint8_t t, uint8_t e);
         void begin();
         bool near();
+        void end();
 };
